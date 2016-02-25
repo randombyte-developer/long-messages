@@ -11,7 +11,7 @@ buildscript {
 
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "com.github.qixalite:SpongeStart:1.1"
+        classpath "com.github.qixalite:SpongeStart:1.4"
     }
 }
 
