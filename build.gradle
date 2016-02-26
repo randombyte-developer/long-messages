@@ -21,8 +21,18 @@ apply plugin: "SpongeStart"
 repositories {
     jcenter()
     maven {
+        name = 'spongepowered'
         url "https://repo.spongepowered.org/maven/"
     }
+    maven {
+        name = 'jitpack'
+        url = 'https://jitpack.io'
+    }
+}
+
+configurations {
+    shade
+    compile.extendsFrom shade
 }
 
 sponge{
@@ -32,4 +42,11 @@ sponge{
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.spongepowered:spongeapi:3.1.0-SNAPSHOT"
+    shade 'com.github.Flibio:Updatifier:v1.3.1:api'
+}
+
+jar {
+    configurations.shade.copyRecursive().setTransitive(false).each { artifact ->
+        from (zipTree(artifact))
+    }
 }

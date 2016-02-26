@@ -1,6 +1,7 @@
 package de.randombyte.longmessages
 
 import com.google.inject.Inject
+import me.flibio.updatifier.Updatifier
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.entity.living.player.Player
@@ -13,7 +14,8 @@ import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
 import java.util.*
 
-@Plugin(id = "de.randombyte.LongMessages", name = "LongMessages", version = "0.1")
+@Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, dependencies = "after: Updatifier")
+@Updatifier(repoName = PluginInfo.NAME, repoOwner = "randombyte-developer", version = PluginInfo.VERSION)
 class LongMessages {
 
     private val CONTINUE_CHAR = "+"
@@ -29,7 +31,7 @@ class LongMessages {
 
     @Listener
     fun init(event: GameInitializationEvent) {
-        logger.info("LongMessages loaded: v0.1")
+        logger.info("${PluginInfo.NAME} loaded: ${PluginInfo.VERSION}")
     }
 
     @Listener
