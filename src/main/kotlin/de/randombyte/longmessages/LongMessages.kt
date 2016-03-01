@@ -4,6 +4,8 @@ import com.google.inject.Inject
 import me.flibio.updatifier.Updatifier
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
+import org.spongepowered.api.command.CommandResult
+import org.spongepowered.api.command.spec.CommandSpec
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.filter.cause.First
@@ -31,6 +33,20 @@ class LongMessages {
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
+        val deleteStoredMessages = CommandSpec.builder()
+            .description(Text.of("Deletes all stored messages"))
+            .executor { src, ctx ->
+                if (src is Player && storedMessages.containsKey(src.uuid)) {
+                    storedMessages.remove(src.uuid)
+                    src.sendMessage(Text.of(TextColors.YELLOW, "Deleted stored messages!"))
+                    CommandResult.success()
+                } else {
+                    src.sendMessage(Text.of(TextColors.YELLOW, "This command must be executed by a player!"))
+                    CommandResult.empty()
+                }
+            }
+            .build()
+        Sponge.getCommandManager().register(this, deleteStoredMessages, "deleteStoredMessage", "dsm", "d")
         logger.info("${PluginInfo.NAME} loaded: ${PluginInfo.VERSION}")
     }
 
