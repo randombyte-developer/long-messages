@@ -30,7 +30,7 @@ class LongMessages {
     private fun String.lastChar() = this[lastIndex].toString()
 
     @Listener
-    fun init(event: GameInitializationEvent) {
+    fun onInit(event: GameInitializationEvent) {
         logger.info("${PluginInfo.NAME} loaded: ${PluginInfo.VERSION}")
     }
 
