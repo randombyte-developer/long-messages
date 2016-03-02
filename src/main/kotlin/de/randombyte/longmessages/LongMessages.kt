@@ -70,6 +70,7 @@ class LongMessages {
             CONTINUE_CHAR -> message.toPlain().removeLastChar()
             else -> return false
         }
+        if (plainMessage.isBlank()) return false //Don't store blank messages
         val preparedMessage = Text.builder(message, plainMessage).build()
         val messages = storedMessages[player.uuid] ?: ArrayList<Text>()
         messages.add(preparedMessage)
