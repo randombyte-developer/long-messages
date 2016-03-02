@@ -81,7 +81,10 @@ class LongMessages {
 
     private fun handleSendStoredMessages(lastMessage: Text, player: Player) {
         val builder = Text.builder()
-        builder.append(storedMessages[player.uuid]!!).append(lastMessage)
+        builder
+            .append(Text.of("<", player.name, "> "))
+            .append(storedMessages[player.uuid]!!)
+            .append(lastMessage)
         storedMessages.remove(player.uuid)
         Sponge.getServer().broadcastChannel.send(player, builder.build())
     }
