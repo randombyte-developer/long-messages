@@ -41,7 +41,7 @@ class LongMessages {
         val deleteStoredMessages = CommandSpec.builder()
             .description(Text.of("Deletes all stored messages"))
             .executor { src, ctx ->
-                if (src is Player && storedMessages.containsKey(src.uuid)) {
+                if (src is Player) {
                     storedMessages.remove(src.uuid)
                     src.sendMessage(Text.of(TextColors.YELLOW, "Deleted stored messages!"))
                     CommandResult.success()
