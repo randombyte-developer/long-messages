@@ -1,5 +1,5 @@
 group "de.randombyte"
-version "0.3"
+version "0.3.1"
 
 buildscript {
     ext.kotlin_version = "1.0.0"
@@ -30,19 +30,20 @@ repositories {
     }
 }
 
+sponge{
+    eula true
+}
+
 configurations {
     shade
     compile.extendsFrom shade
 }
 
-sponge{
-    eula true
-}
-
 dependencies {
+    shade "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.spongepowered:spongeapi:3.1.0-SNAPSHOT"
-    shade 'com.github.Flibio:Updatifier:v1.3.1:api'
+    shade "com.github.Flibio:Updatifier:v1.3.1:api"
 }
 
 jar {
