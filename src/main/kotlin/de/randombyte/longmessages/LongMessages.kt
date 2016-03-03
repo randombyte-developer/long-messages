@@ -6,14 +6,19 @@ import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.command.CommandResult
 import org.spongepowered.api.command.spec.CommandSpec
+import org.spongepowered.api.data.key.Keys
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
 import org.spongepowered.api.event.filter.cause.First
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.event.message.MessageChannelEvent
+import org.spongepowered.api.event.network.ClientConnectionEvent
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.text.Text
 import org.spongepowered.api.text.format.TextColors
+import org.spongepowered.api.util.Identifiable
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 @Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, dependencies = "after: Updatifier")
@@ -26,7 +31,7 @@ class LongMessages {
     @Inject private lateinit var logger: Logger;
     private val storedMessages = HashMap<String, MutableList<Text>>()
 
-    private val Player.uuid: String
+    private val Identifiable.uuid: String
         get() = uniqueId.toString()
 
     private fun String.lastChar() = this[lastIndex].toString()
@@ -58,6 +63,16 @@ class LongMessages {
             handleSendStoredMessages(event.rawMessage, player)
             event.setMessage(null)
         } else return
+    }
+
+    @Listener
+    fun onLogin(event: ClientConnectionEvent.Login) {
+        val lastPlayedOpt = event.targetUser.getValue(Keys.LAST_DATE_PLAYED)
+        if (!lastPlayedOpt.isPresent) return
+        if (lastPlayedOpt.get().get().plus(5, ChronoUnit.MINUTES).toEpochMilli() < Instant.now().toEpochMilli()) {
+            //Five minutes passed after last seen on this server -> delete storedMessages for this Player
+            storedMessages.remove(event.targetUser.uuid)
+        }
     }
 
     /**
