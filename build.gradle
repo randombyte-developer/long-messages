@@ -15,7 +15,7 @@ plugins {
 apply plugin: "SpongeStart" //Will include it in plugins DSL when qixalite uploaded the plugin to the plugins.gradle.org repo
 
 group "de.randombyte"
-version "0.3.2"
+version "0.3.3"
 
 repositories {
     jcenter()
