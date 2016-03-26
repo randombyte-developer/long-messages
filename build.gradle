@@ -1,22 +1,21 @@
-group "de.randombyte"
-version "0.3.2"
-
 buildscript {
-    ext.kotlin_version = "1.0.0"
-
     repositories {
         jcenter()
         maven { url "https://jitpack.io" }
     }
-
     dependencies {
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath "com.github.qixalite:SpongeStart:1.4"
     }
 }
 
-apply plugin: "kotlin"
-apply plugin: "SpongeStart"
+plugins {
+    id "com.github.johnrengelman.shadow" version "1.2.3"
+    id "com.zoltu.kotlin" version "1.0.1"
+}
+apply plugin: "SpongeStart" //Will include it in plugins DSL when qixalite uploaded the plugin to the plugins.gradle.org repo
+
+group "de.randombyte"
+version "0.3.2"
 
 repositories {
     jcenter()
@@ -35,19 +34,19 @@ sponge{
 }
 
 configurations {
-    shade
-    compile.extendsFrom shade
+    compile.extendsFrom shadow
 }
 
 dependencies {
-    shade "org.jetbrains.kotlin:kotlin-runtime:$kotlin_version"
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    compile "org.spongepowered:spongeapi:3.1.0-SNAPSHOT"
-    shade "com.github.Flibio:Updatifier:v1.3.1:api"
+    shadow "org.jetbrains.kotlin:kotlin-runtime:1.0.1"
+    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.1"
+    compile "org.spongepowered:spongeapi:4.0.3"
+    shadow "com.github.Flibio:Updatifier:v1.4.0:api"
 }
 
-jar {
-    configurations.shade.copyRecursive().setTransitive(false).each { artifact ->
-        from (zipTree(artifact))
-    }
+/*For including Updatifier in this plugin jar*/
+tasks.getByPath(':jar').enabled = false //disables the output of the original jar without Updatifier api
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier = '' // remove "-all" trailing in jar name
 }

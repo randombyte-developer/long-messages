@@ -21,7 +21,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-@Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, dependencies = "after: Updatifier")
+@Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, authors = arrayOf(PluginInfo.AUTHOR))
 @Updatifier(repoName = PluginInfo.NAME, repoOwner = "randombyte-developer", version = PluginInfo.VERSION)
 class LongMessages {
 
@@ -58,10 +58,10 @@ class LongMessages {
     @Listener
     fun onMessage(event: MessageChannelEvent.Chat, @First player: Player) {
         if (handleMessage(event.rawMessage, player)) {
-            event.setMessage(null)
+            event.isCancelled = true
         } else if (storedMessages.containsKey(player.uuid)) {
             handleSendStoredMessages(event.rawMessage, player)
-            event.setMessage(null)
+            event.isCancelled = true
         } else return
     }
 
