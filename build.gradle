@@ -9,7 +9,6 @@ buildscript {
 }
 
 plugins {
-    id "com.github.johnrengelman.shadow" version "1.2.3"
     id "com.zoltu.kotlin" version "1.0.1"
 }
 apply plugin: "SpongeStart" //Will include it in plugins DSL when qixalite uploaded the plugin to the plugins.gradle.org repo
@@ -34,19 +33,22 @@ sponge{
 }
 
 configurations {
+    shade
     compile.extendsFrom shadow
 }
 
 dependencies {
-    shadow "org.jetbrains.kotlin:kotlin-runtime:1.0.1"
+    shade "org.jetbrains.kotlin:kotlin-runtime:1.0.1"
+    shade "org.jetbrains.kotlin:kotlin-stdlib:1.0.1"
     compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.1"
     compile "org.spongepowered:spongeapi:4.0.3"
-    shadow "com.github.Flibio:Updatifier:v1.4.0:api"
 }
 
-/*For including Updatifier in this plugin jar*/
-tasks.getByPath(':jar').enabled = false //disables the output of the original jar without Updatifier api
-shadowJar {
-    configurations = [project.configurations.shadow]
-    classifier = '' // remove "-all" trailing in jar name
+//https://forgegradle.readthedocs.org/en/latest/user-guide/shading/
+jar {
+    configurations.shade.each { dep ->
+        from(project.zipTree(dep)) {
+            exclude 'META-INF', 'META-INF/**'
+        }
+    }
 }

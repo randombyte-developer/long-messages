@@ -1,7 +1,6 @@
 package de.randombyte.longmessages
 
 import com.google.inject.Inject
-import me.flibio.updatifier.Updatifier
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
 import org.spongepowered.api.command.CommandResult
@@ -22,7 +21,6 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 @Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, authors = arrayOf(PluginInfo.AUTHOR))
-@Updatifier(repoName = PluginInfo.NAME, repoOwner = "randombyte-developer", version = PluginInfo.VERSION)
 class LongMessages {
 
     private val CONTINUE_CHAR = "+"
