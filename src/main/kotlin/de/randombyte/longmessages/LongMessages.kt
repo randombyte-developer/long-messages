@@ -56,6 +56,8 @@ class LongMessages {
 
     @Listener
     fun onMessage(event: MessageChannelEvent.Chat, @First player: Player) {
+        if (!player.hasPermission("longmessages.use")) return
+
         if (handleMessage(event.rawMessage, player)) {
             event.isCancelled = true
         } else if (storedMessages.containsKey(player.uuid)) {
