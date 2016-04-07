@@ -14,6 +14,7 @@ import org.spongepowered.api.event.message.MessageChannelEvent
 import org.spongepowered.api.event.network.ClientConnectionEvent
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.text.Text
+import org.spongepowered.api.text.channel.MessageChannel
 import org.spongepowered.api.text.format.TextColors
 import org.spongepowered.api.util.Identifiable
 import java.time.Instant
@@ -58,7 +59,7 @@ class LongMessages {
         if (handleMessage(event.rawMessage, player)) {
             event.isCancelled = true
         } else if (storedMessages.containsKey(player.uuid)) {
-            handleSendStoredMessages(event.rawMessage, player)
+            handleSendStoredMessages(event.rawMessage, player, event.channel.orElseGet { null })
             event.isCancelled = true
         } else return
     }
@@ -92,13 +93,13 @@ class LongMessages {
         return true
     }
 
-    private fun handleSendStoredMessages(lastMessage: Text, player: Player) {
+    private fun handleSendStoredMessages(lastMessage: Text, player: Player, channel: MessageChannel?) {
         val builder = Text.builder()
         builder
             .append(Text.of("<", player.name, "> "))
             .append(storedMessages[player.uuid]!!)
             .append(lastMessage)
         storedMessages.remove(player.uuid)
-        Sponge.getServer().broadcastChannel.send(player, builder.build())
+        (channel ?: Sponge.getServer().broadcastChannel).send(player, builder.build())
     }
 }
