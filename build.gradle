@@ -1,17 +1,7 @@
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://jitpack.io" }
-    }
-    dependencies {
-        classpath "com.github.qixalite:SpongeStart:1.4"
-    }
-}
-
 plugins {
+    id "com.qixalite.spongestart" version "1.4.2"
     id "com.zoltu.kotlin" version "1.0.1"
 }
-apply plugin: "SpongeStart" //Will include it in plugins DSL when qixalite uploaded the plugin to the plugins.gradle.org repo
 
 group "de.randombyte"
 version "0.3.3"
@@ -22,13 +12,9 @@ repositories {
         name = 'spongepowered'
         url "https://repo.spongepowered.org/maven/"
     }
-    maven {
-        name = 'jitpack'
-        url = 'https://jitpack.io'
-    }
 }
 
-sponge{
+spongestart{
     eula true
 }
 
