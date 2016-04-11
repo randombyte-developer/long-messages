@@ -21,13 +21,19 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-@Plugin(id = PluginInfo.ID, name = PluginInfo.NAME, version = PluginInfo.VERSION, authors = arrayOf(PluginInfo.AUTHOR))
-class LongMessages {
+@Plugin(id = LongMessages.ID, name = LongMessages.NAME, version = LongMessages.VERSION, authors = arrayOf(LongMessages.AUTHOR))
+class LongMessages @Inject constructor(val logger: Logger) {
 
-    private val CONTINUE_CHAR = "+"
-    private val SPACE_CHAR = "_"
+    companion object {
+        const val NAME = "LongMessages"
+        const val ID = "de.randombyte.longmessages"
+        const val VERSION = "v1.0.0"
+        const val AUTHOR = "RandomByte"
 
-    @Inject private lateinit var logger: Logger;
+        val CONTINUE_CHAR = "+"
+        val SPACE_CHAR = "_"
+    }
+
     private val storedMessages = HashMap<String, MutableList<Text>>()
 
     private val Identifiable.uuid: String
@@ -51,7 +57,7 @@ class LongMessages {
             }
             .build()
         Sponge.getCommandManager().register(this, deleteStoredMessages, "deleteStoredMessage", "dsm", "d")
-        logger.info("${PluginInfo.NAME} loaded: ${PluginInfo.VERSION}")
+        logger.info("$NAME loaded: $VERSION")
     }
 
     @Listener
