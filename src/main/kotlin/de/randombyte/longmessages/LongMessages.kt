@@ -27,7 +27,7 @@ class LongMessages @Inject constructor(val logger: Logger) {
     companion object {
         const val NAME = "LongMessages"
         const val ID = "de.randombyte.longmessages"
-        const val VERSION = "v1.0.0"
+        const val VERSION = "v1.0.1"
         const val AUTHOR = "RandomByte"
 
         val CONTINUE_CHAR = "+"
