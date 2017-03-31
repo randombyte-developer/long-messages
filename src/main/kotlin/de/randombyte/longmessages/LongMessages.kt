@@ -70,10 +70,6 @@ class LongMessages @Inject constructor(
                     else showMessageCommand.execute(src, args)
                 }
                 .child(CommandSpec.builder()
-                        .arguments(remainingRawJoinedStrings(AppendMessageCommand.MESSAGE_ARG.toText()))
-                        .executor(appendMessageCommand)
-                        .build(), "add")
-                .child(CommandSpec.builder()
                         .executor(DeleteMessageCommand(
                                 isMessageStored = storedMessages::containsKey,
                                 isCommand = { playerUuid -> isCommand(storedMessages.getValue(playerUuid)) },
@@ -85,7 +81,7 @@ class LongMessages @Inject constructor(
 
     @Listener(order = Order.FIRST) // to cancel the event before other plugins receive it
     fun onMessage(event: MessageChannelEvent.Chat, @First player: Player) {
-        if (!player.hasPermission("$ROOT_PERMISSION.use")) return
+        if (!player.hasPermission(ROOT_PERMISSION)) return
 
         val plainMessage = event.rawMessage.toPlain()
         val appendCharacters = configManager.get().appendCharacters
