@@ -1,113 +1,129 @@
 package de.randombyte.longmessages
 
 import com.google.inject.Inject
+import de.randombyte.kosp.bstats.BStats
+import de.randombyte.kosp.config.ConfigManager
+import de.randombyte.kosp.extensions.*
+import de.randombyte.longmessages.commands.AppendMessageCommand
+import de.randombyte.longmessages.commands.DeleteMessageCommand
+import de.randombyte.longmessages.commands.ShowMessageCommand
+import ninja.leaping.configurate.commented.CommentedConfigurationNode
+import ninja.leaping.configurate.loader.ConfigurationLoader
 import org.slf4j.Logger
 import org.spongepowered.api.Sponge
-import org.spongepowered.api.command.CommandResult
+import org.spongepowered.api.command.args.GenericArguments.optional
+import org.spongepowered.api.command.args.GenericArguments.remainingRawJoinedStrings
 import org.spongepowered.api.command.spec.CommandSpec
-import org.spongepowered.api.data.key.Keys
+import org.spongepowered.api.config.DefaultConfig
 import org.spongepowered.api.entity.living.player.Player
 import org.spongepowered.api.event.Listener
+import org.spongepowered.api.event.Order
 import org.spongepowered.api.event.filter.cause.First
 import org.spongepowered.api.event.game.state.GameInitializationEvent
 import org.spongepowered.api.event.message.MessageChannelEvent
 import org.spongepowered.api.event.network.ClientConnectionEvent
 import org.spongepowered.api.plugin.Plugin
 import org.spongepowered.api.text.Text
-import org.spongepowered.api.text.channel.MessageChannel
-import org.spongepowered.api.text.format.TextColors
-import org.spongepowered.api.util.Identifiable
-import java.time.Instant
-import java.time.temporal.ChronoUnit
+import org.spongepowered.api.text.action.TextActions.runCommand
 import java.util.*
 
 @Plugin(id = LongMessages.ID, name = LongMessages.NAME, version = LongMessages.VERSION, authors = arrayOf(LongMessages.AUTHOR))
-class LongMessages @Inject constructor(val logger: Logger) {
+class LongMessages @Inject constructor(
+        val logger: Logger,
+        @DefaultConfig(sharedRoot = true) configurationLoader: ConfigurationLoader<CommentedConfigurationNode>,
+        val bStats: BStats
+) {
 
-    companion object {
+    internal companion object {
         const val NAME = "LongMessages"
-        const val ID = "de.randombyte.longmessages"
-        const val VERSION = "v1.0.1"
+        const val ID = "long-messages"
+        const val VERSION = "2.0"
         const val AUTHOR = "RandomByte"
 
-        val CONTINUE_CHAR = "+"
-        val SPACE_CHAR = "_"
+        const val ROOT_PERMISSION = "longmessages"
+
+        const val COMMAND_PREFIX = "/"
     }
 
-    private val storedMessages = HashMap<String, MutableList<Text>>()
+    private val configManager = ConfigManager(configurationLoader, clazz = Config::class.java)
 
-    private val Identifiable.uuid: String
-        get() = uniqueId.toString()
+    private val storedMessages: MutableMap<UUID, String> = mutableMapOf()
 
-    private fun String.lastChar() = this[lastIndex].toString()
+    private val appendMessageCommand = AppendMessageCommand(
+            appendMessage = this::appendMessage,
+            sendSuccessMessage = { player, message -> player.sendMessage(getSuccessMessage(message)) })
+
+    private val showMessageCommand = ShowMessageCommand(
+            getMessage = storedMessages::get,
+            isCommand = { playerUuid -> isCommand(storedMessages.getValue(playerUuid)) },
+            deleteMessage = { storedMessages.remove(it) })
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
-        val deleteStoredMessages = CommandSpec.builder()
-            .description(Text.of("Deletes all stored messages"))
-            .executor { src, ctx ->
-                if (src is Player) {
-                    storedMessages.remove(src.uuid)
-                    src.sendMessage(Text.of(TextColors.YELLOW, "Deleted stored messages!"))
-                    CommandResult.success()
-                } else {
-                    src.sendMessage(Text.of(TextColors.YELLOW, "This command must be executed by a player!"))
-                    CommandResult.empty()
+        Sponge.getCommandManager().register(this, CommandSpec.builder()
+                .permission(ROOT_PERMISSION)
+                .arguments(optional(remainingRawJoinedStrings(AppendMessageCommand.MESSAGE_ARG.toText())))
+                .executor { src, args ->
+                    // redirect based upon if arg is provided
+                    if (args.hasAny(AppendMessageCommand.MESSAGE_ARG))
+                        appendMessageCommand.execute(src, args)
+                    else showMessageCommand.execute(src, args)
                 }
-            }
-            .build()
-        Sponge.getCommandManager().register(this, deleteStoredMessages, "deleteStoredMessage", "dsm", "d")
+                .child(CommandSpec.builder()
+                        .arguments(remainingRawJoinedStrings(AppendMessageCommand.MESSAGE_ARG.toText()))
+                        .executor(appendMessageCommand)
+                        .build(), "add")
+                .child(CommandSpec.builder()
+                        .executor(DeleteMessageCommand(
+                                isMessageStored = storedMessages::containsKey,
+                                isCommand = { playerUuid -> isCommand(storedMessages.getValue(playerUuid)) },
+                                deleteMessage = { storedMessages.remove(it) }))
+                        .build(), "delete")
+                .build(), "longmessages", "lmsgs")
         logger.info("$NAME loaded: $VERSION")
     }
 
-    @Listener
+    @Listener(order = Order.FIRST) // to cancel the event before other plugins receive it
     fun onMessage(event: MessageChannelEvent.Chat, @First player: Player) {
-        if (!player.hasPermission("longmessages.use")) return
+        if (!player.hasPermission("$ROOT_PERMISSION.use")) return
 
-        if (handleMessage(event.rawMessage, player)) {
-            event.isCancelled = true
-        } else if (storedMessages.containsKey(player.uuid)) {
-            handleSendStoredMessages(event.rawMessage, player, event.channel.orElseGet { null })
-            event.isCancelled = true
-        } else return
+        val plainMessage = event.rawMessage.toPlain()
+        val appendCharacters = configManager.get().appendCharacters
+        val rawMessage = getRawMessage(plainMessage, appendCharacters)
+
+        if (rawMessage != null) {
+            appendMessage(player.uniqueId, rawMessage)
+            player.sendMessage(getSuccessMessage(rawMessage))
+            event.isMessageCancelled = true
+        }
     }
 
     @Listener
-    fun onLogin(event: ClientConnectionEvent.Login) {
-        val lastPlayedOpt = event.targetUser.getValue(Keys.LAST_DATE_PLAYED)
-        if (!lastPlayedOpt.isPresent) return
-        if (lastPlayedOpt.get().get().plus(5, ChronoUnit.MINUTES).toEpochMilli() < Instant.now().toEpochMilli()) {
-            //Five minutes passed after last seen on this server -> delete storedMessages for this Player
-            storedMessages.remove(event.targetUser.uuid)
-        }
+    fun onDisconnect(event: ClientConnectionEvent.Disconnect) {
+        storedMessages.remove(event.targetEntity.uniqueId)
     }
 
-    /**
-     * @return If message was stored
-     */
-    private fun handleMessage(message: Text, player: Player): Boolean {
-        fun String.removeLastChar() = substring(0, lastIndex)
-        val plainMessage = when (message.toPlain().lastChar()) {
-            SPACE_CHAR -> message.toPlain().removeLastChar() + " "
-            CONTINUE_CHAR -> message.toPlain().removeLastChar()
-            else -> return false
+    private fun getRawMessage(message: String, appendCharacters: List<String>): String? {
+        appendCharacters.forEach { appendCharacter ->
+            if (message.endsWith(appendCharacter)) return message.removeSuffix(appendCharacter)
         }
-        if (plainMessage.isBlank()) return false //Don't store blank messages
-        val preparedMessage = Text.builder(message, plainMessage).build()
-        val messages = storedMessages[player.uuid] ?: ArrayList<Text>()
-        messages.add(preparedMessage)
-        storedMessages[player.uuid] = messages
-        player.sendMessage(Text.of(TextColors.YELLOW, "Stored: ", TextColors.GRAY, preparedMessage))
-        return true
+
+        return null
     }
 
-    private fun handleSendStoredMessages(lastMessage: Text, player: Player, channel: MessageChannel?) {
-        val builder = Text.builder()
-        builder
-            .append(Text.of("<", player.name, "> "))
-            .append(storedMessages[player.uuid]!!)
-            .append(lastMessage)
-        storedMessages.remove(player.uuid)
-        (channel ?: Sponge.getServer().broadcastChannel).send(player, builder.build())
+    private fun appendMessage(playerUuid: UUID, message: String) {
+        val storedMessage = storedMessages[playerUuid]?.plus(" ") ?: ""
+        val newMessage = storedMessage + message
+        storedMessages.put(playerUuid, newMessage)
     }
+
+    private fun getSuccessMessage(appendedMessage: String): Text {
+        val isCommand = isCommand(appendedMessage)
+        val name1 = if (isCommand) "Command" else "Message"
+        val name2 = if (isCommand) "command" else "message"
+        return "$name1 stored: ".green() + "\"".gray() + appendedMessage + "\"\n".gray() +
+                "See your whole stored $name2: [/longmessages]".aqua().action(runCommand("/longmessages"))
+    }
+
+    private fun isCommand(storedMessage: String) = storedMessage.startsWith(COMMAND_PREFIX)
 }
