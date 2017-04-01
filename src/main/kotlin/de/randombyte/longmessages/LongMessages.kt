@@ -37,7 +37,7 @@ class LongMessages @Inject constructor(
     internal companion object {
         const val NAME = "LongMessages"
         const val ID = "long-messages"
-        const val VERSION = "2.0"
+        const val VERSION = "2.0.1"
         const val AUTHOR = "RandomByte"
 
         const val ROOT_PERMISSION = "longmessages"
@@ -60,6 +60,8 @@ class LongMessages @Inject constructor(
 
     @Listener
     fun onInit(event: GameInitializationEvent) {
+        configManager.save(configManager.get()) // adds missing nodes
+
         Sponge.getCommandManager().register(this, CommandSpec.builder()
                 .permission(ROOT_PERMISSION)
                 .arguments(optional(remainingRawJoinedStrings(AppendMessageCommand.MESSAGE_ARG.toText())))
@@ -83,9 +85,12 @@ class LongMessages @Inject constructor(
     fun onMessage(event: MessageChannelEvent.Chat, @First player: Player) {
         if (!player.hasPermission(ROOT_PERMISSION)) return
 
+        val config = configManager.get()
+
         val plainMessage = event.rawMessage.toPlain()
-        val appendCharacters = configManager.get().appendCharacters
-        val rawMessage = getRawMessage(plainMessage, appendCharacters)
+        val triggerCharacters = config.triggerCharacters
+        val triggerCharsAsPrefix = config.triggerCharactersAsPrefix
+        val rawMessage = getRawMessage(plainMessage, triggerCharacters, triggerCharsAsPrefix)
 
         if (rawMessage != null) {
             appendMessage(player.uniqueId, rawMessage)
@@ -99,9 +104,23 @@ class LongMessages @Inject constructor(
         storedMessages.remove(event.targetEntity.uniqueId)
     }
 
-    private fun getRawMessage(message: String, appendCharacters: List<String>): String? {
-        appendCharacters.forEach { appendCharacter ->
-            if (message.endsWith(appendCharacter)) return message.removeSuffix(appendCharacter)
+    private fun getRawMessage(message: String, triggerCharacters: List<String>, triggerCharsAsPrefix: Boolean): String? {
+        fun checkFront(trigger: String): String? =
+                if (triggerCharsAsPrefix && message.startsWith(trigger)) message.removePrefix(trigger) else null
+
+        fun checkBack(trigger: String): String? =
+                if (message.endsWith(trigger)) message.removeSuffix(trigger) else null
+
+        // first check only the front for trigger characters
+        triggerCharacters.forEach { trigger ->
+            val rawMessage = checkFront(trigger)
+            if (rawMessage != null) return rawMessage
+        }
+
+        // also check the end of the message for trigger characters
+        triggerCharacters.forEach { trigger ->
+            val rawMessage = checkBack(trigger)
+            if (rawMessage != null) return rawMessage
         }
 
         return null
